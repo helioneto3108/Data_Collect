@@ -45,10 +45,34 @@ class collector:
         resp = self.get_content(**kwargs)
 
         if resp.status_code == 200:
-            self.save_data(resp.json(), save_format)
+            data = resp.json()
+            self.save_data(data, save_format)
 
         else:
+            data = None
             print(f"Request sem sucesso: {resp.status_code}", resp.json())
+
+        return data
+
+    def auto_exec(self, save_format="json", date_stop="2000-01-01"):
+
+        page = 1
+        while True:
+            print(page)
+            data = self.get_and_save(save_format=save_format, page=page, per_page=1000)
+
+            if data == None:
+                print("Erro ao coletar dados...aguardando.")
+                time.sleep()
+
+            else:
+                date_last = pd.to_datetime(data[-1]["published_at"]).date()
+                if date_last < pd.to_datetime(date_stop).date():
+                    break
+                elif len(data) < 1000:
+                    break
+                page += 1
+                time.sleep(5)
 
 
 # %%
@@ -62,5 +86,10 @@ collect.get_content()
 collect.get_content().json()
 # %%
 collect.get_and_save()
+
+# %%
+url = "https://api.jovemnerd.com.br/wp-json/jovemnerd/v1/nerdcasts/"
+collect = collector(url, "episodios")
+collect.auto_exec()
 
 # %%
